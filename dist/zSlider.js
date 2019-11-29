@@ -28,7 +28,8 @@
         'minPercentToSlide': null, // percent to decide to slide
         'autoplay': true, // autoplay?
         'direction': 'left', // autoplay direction
-        'interval': 5 // seconds
+        'interval': 5, // seconds
+        'wrapAround': true,
     };
 
     var nextTick = function(fn) {
@@ -212,6 +213,21 @@
         var cur = list[0];
         var pre = list[list.length - 1];
         var next = list[1];
+        
+        if (!slider.options.wrapAround) {
+            // If we are on slide 0 and diffX is positive
+            // we should not allow any movement.
+            if (cur.dataset.index == 0 && diffX > 0) {
+                return;
+            }
+
+            // If we are on the last slide and diffX is
+            // negative, we should not allow any movement.
+            if (cur.dataset.index == list.length - 1 && diffX < 0) {
+                return;
+            }
+        }
+        
         setTransition(pre, cur, next, '');
         move(pre, cur, next, diffX, slider.width);
     };
@@ -484,6 +500,20 @@
         var cur, pre, next, customEvent;
         direction = direction || this.options.direction;
         diffX = diffX || 0;
+        
+        // If we are on slide 0 and diffX is positive
+        // we should not allow any movement.
+        if (!this.options.wrapAround) {
+            if (current == 0 && diffX > 0) {
+                return;
+            }
+
+            // If we are on the last slide and diffX is
+            // negative, we should not allow any movement.
+            if (current == list.length - 1 && diffX < 0) {
+                return;
+            }
+        }
 
         if(direction === 'left') {
             list.push(list.shift());
