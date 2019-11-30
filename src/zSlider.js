@@ -156,19 +156,30 @@
     // create and layout indicators
     // http://jsperf.com/createnode-vs-clonenode, use clone instead create
     var prepareIndicator = function(slider, wrapClassName, className, howMany, activeIndex, activeClass) {
-        var item = document.createElement('span');
         var indicatorWrap = document.createElement('div');
         var indicators = [];
         var i;
-
+        
         indicatorWrap.className = wrapClassName || 'z-slide-indicator';
 
-        item.className = className || 'z-slide-dot';
-        for(i = 1; i < howMany; i++) {
-            indicators.push(indicatorWrap.appendChild(item.cloneNode(false)));
+        for (i = 0; i < howMany; i++) {
+            var item = document.createElement('span');
+            var slide = slider.list.find(slide => slide.uuid === i);
+             
+            if (slide.dataset.indicator) {
+                item.innerHTML = slide.dataset.indicator;
+            }
+            
+            item.className = className || 'z-slide-dot';
+
+            if (slide.dataset.indicatorClass) {
+                item.classList.add(slide.dataset.indicatorClass);
+            }
+
+            indicators.push(indicatorWrap.appendChild(item));
         }
-        indicators.push(indicatorWrap.appendChild(item));
-        indicators[activeIndex].className = 'z-slide-dot ' + activeClass;
+
+        indicators[activeIndex].classList.add(activeClass);
 
         slider.indicatorWrap = indicatorWrap;
         slider.indicators = indicators;
@@ -181,8 +192,8 @@
 
     // update indicator style
     var updateIndicator = function(indicators, pre, cur) {
-        indicators[pre].className = 'z-slide-dot';
-        indicators[cur].className = 'z-slide-dot active';
+        indicators[pre].classList.remove('active');
+        indicators[cur].classList.add('active');
     };
 
     // invocated when resize

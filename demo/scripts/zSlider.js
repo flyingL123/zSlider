@@ -28,7 +28,8 @@
         'minPercentToSlide': null, // percent to decide to slide
         'autoplay': true, // autoplay?
         'direction': 'left', // autoplay direction
-        'interval': 5 // seconds
+        'interval': 5, // seconds
+        'wrapAround': true,
     };
 
     var nextTick = function(fn) {
@@ -155,19 +156,30 @@
     // create and layout indicators
     // http://jsperf.com/createnode-vs-clonenode, use clone instead create
     var prepareIndicator = function(slider, wrapClassName, className, howMany, activeIndex, activeClass) {
-        var item = document.createElement('span');
         var indicatorWrap = document.createElement('div');
         var indicators = [];
         var i;
-
+        
         indicatorWrap.className = wrapClassName || 'z-slide-indicator';
 
-        item.className = className || 'z-slide-dot';
-        for(i = 1; i < howMany; i++) {
-            indicators.push(indicatorWrap.appendChild(item.cloneNode(false)));
+        for (i = 0; i < howMany; i++) {
+            var item = document.createElement('span');
+            var slide = slider.list.find(slide => slide.uuid === i);
+             
+            if (slide.dataset.indicator) {
+                item.innerHTML = slide.dataset.indicator;
+            }
+            
+            item.className = className || 'z-slide-dot';
+
+            if (slide.dataset.indicatorClass) {
+                item.classList.add(slide.dataset.indicatorClass);
+            }
+
+            indicators.push(indicatorWrap.appendChild(item));
         }
-        indicators.push(indicatorWrap.appendChild(item));
-        indicators[activeIndex].className = 'z-slide-dot ' + activeClass;
+
+        indicators[activeIndex].classList.add(activeClass);
 
         slider.indicatorWrap = indicatorWrap;
         slider.indicators = indicators;
@@ -180,8 +192,8 @@
 
     // update indicator style
     var updateIndicator = function(indicators, pre, cur) {
-        indicators[pre].className = 'z-slide-dot';
-        indicators[cur].className = 'z-slide-dot active';
+        indicators[pre].classList.remove('active');
+        indicators[cur].classList.add('active');
     };
 
     // invocated when resize
@@ -212,6 +224,13 @@
         var cur = list[0];
         var pre = list[list.length - 1];
         var next = list[1];
+        
+        checkWrap(slider, cur, diffX);
+        
+        if (slider.isWrapping && !slider.options.wrapAround) {
+            return;
+        }
+
         setTransition(pre, cur, next, '');
         move(pre, cur, next, diffX, slider.width);
     };
@@ -392,6 +411,14 @@
             }
         }, 200);
     };
+    
+    var checkWrap = function (slider, from, diffX) {
+        if (from.dataset.first && diffX > 0 || from.dataset.last && diffX < 0) {
+            slider.isWrapping = true;
+        } else {
+            slider.isWrapping = false;
+        }
+    };
 
     /**
      * @name    Slider 轮播
@@ -406,7 +433,7 @@
         var count;
         var width;
         var self;
-
+        
         if(!containerSelector || !itemSelector) {
             console.error('Slider: arguments error.');
             return this;
@@ -421,6 +448,14 @@
             console.error('Slider: no item inside container.');
             return this;
         }
+        
+        // Store first and last data attribute to handle
+        // wraparound. The way zSlider handles 2 elements
+        // is very confusing so these need to be hardcoded
+        // rather than just relying on the index within list
+        // to determine which items are first and last.
+        list[0].dataset.first = true;
+        list[list.length - 1].dataset.last = true;
 
         self = this;
         // extend options
@@ -436,6 +471,7 @@
         if(count === 1) {
             return;
         }
+        
         // container width
         width = container.clientWidth;
         this.options = options;
@@ -484,6 +520,10 @@
         var cur, pre, next, customEvent;
         direction = direction || this.options.direction;
         diffX = diffX || 0;
+        
+        if (this.isWrapping && !this.options.wrapAround) {
+            return;
+        }
 
         if(direction === 'left') {
             list.push(list.shift());
@@ -496,10 +536,11 @@
         } else {
             duration *= Math.abs(diffX) / width;
         }
+        
         cur = list[0];
         pre = list[count - 1];
         next = list[1];
-
+        
         transitionText = 'transform ' + duration + 's linear';
         if(direction === 'left' || (direction === 'restore' && diffX > 0)) {
             setTransition(pre, cur, next, transitionText, transitionText, '');
