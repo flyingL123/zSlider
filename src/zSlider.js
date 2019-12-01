@@ -541,7 +541,7 @@
         pre = list[count - 1];
         next = list[1];
         
-        transitionText = 'transform ' + duration + 's linear';
+        transitionText = 'transform ' + duration + 's ease';
         if(direction === 'left' || (direction === 'restore' && diffX > 0)) {
             setTransition(pre, cur, next, transitionText, transitionText, '');
         } else if(direction === 'right' || (direction === 'restore' && diffX < 0)) {
